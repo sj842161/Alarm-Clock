@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pratiksha’s Stylish Alarm Clock</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    h1 {
+        font-size: 50px;
+        margin-bottom: 20px;
+    }
+
+    #clock {
+        font-size: 70px;
+        margin-bottom: 20px;
+    }
+
+    input, select, button {
+        font-size: 20px;
+        padding: 10px;
+        margin: 10px;
+        border-radius: 10px;
+        border: none;
+    }
+
+    .set-btn { background: #28a745; color: #fff; }
+    .stop-btn { background: #dc3545; color: #fff; }
+    .snooze-btn { background: #ffc107; color: #000; }
+
+    #status {
+        font-size: 24px;
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+
+<h1>🔔 Pratiksha’s Stylish Alarm Clock 🔔</h1>
+<div id="clock">00:00:00</div>
+
+<input type="time" id="alarm-time"><br>
+
+<select id="sound">
+    <option value="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3">Bell Ringing</option>
+    <option value="https://www.soundjay.com/button/sounds/button-4.mp3">Button Beep</option>
+    <option value="https://www.soundjay.com/transportation/sounds/car-horn-1.mp3">Car Horn</option>
+</select><br>
+
+<button class="set-btn" onclick="setAlarm()">Set Alarm</button>
+<button class="stop-btn" onclick="stopAlarm()">Stop</button>
+<button class="snooze-btn" onclick="snoozeAlarm()">Snooze 5 Min</button>
+
+<div id="status"></div>
+
+<audio id="alarm-audio" preload="auto"></audio>
+
+<script>
+let alarmTime = null;
+const alarmAudio = document.getElementById('alarm-audio');
+const clock = document.getElementById('clock');
+const statusText = document.getElementById('status');
+
+function updateClock() {
+    const now = new Date();
+    clock.innerText = now.toLocaleTimeString();
+    const currentTime = now.toTimeString().substr(0,5);
+    if (alarmTime === currentTime) {
+        playAlarm();
+    }
+}
+
+function setAlarm() {
+    alarmTime = document.getElementById('alarm-time').value;
+    const sound = document.getElementById('sound').value;
+    alarmAudio.src = sound;
+    if (alarmTime) {
+        statusText.innerText = "✅ Alarm set for " + alarmTime;
+    } else {
+        alert("Please select time!");
+    }
+}
+
+function playAlarm() {
+    if (alarmAudio.paused) {
+        alarmAudio.play();
+        statusText.innerText = "🚨 Alarm Ringing!";
+    }
+}
+
+function stopAlarm() {
+    alarmAudio.pause();
+    alarmAudio.currentTime = 0;
+    statusText.innerText = "❌ Alarm Stopped";
+}
+
+function snoozeAlarm() {
+    stopAlarm();
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    alarmTime = now.toTimeString().substr(0,5);
+    statusText.innerText = "😴 Snoozed for 5 mins until " + alarmTime;
+}
+
+setInterval(updateClock, 1000);
+</script>
+
+</body>
+</html>
