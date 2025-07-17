@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pratiksha’s Stylish Alarm Clock</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%; animation: gradient 15s ease infinite;
+      color: #fff; font-family: Arial, sans-serif;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh;
+    }
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    h1 { font-size: 50px; margin-bottom: 20px; }
+    #clock { font-size: 70px; margin-bottom: 20px; }
+    input, select, button {
+      font-size: 20px; padding: 10px; margin: 10px;
+      border-radius: 10px; border: none;
+    }
+    .set-btn { background: #28a745; color: #fff; }
+    .stop-btn { background: #dc3545; color: #fff; }
+    .snooze-btn { background: #ffc107; color: #000; }
+    #status { font-size: 24px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>🔔 Pratiksha’s Stylish Alarm Clock 🔔</h1>
+  <div id="clock">00:00:00</div>
+
+  <!-- Alarm time and default sound -->
+  <input type="time" id="alarm-time"><br>
+  <select id="sound">
+    <option value="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3">Bell Ringing</option>
+    <option value="https://www.soundjay.com/button/sounds/button-4.mp3">Button Beep</option>
+    <option value="https://www.soundjay.com/transportation/sounds/car-horn-1.mp3">Car Horn</option>
+  </select><br>
+
+  <!-- Custom ringtone uploads -->
+  <input type="file" id="ringtone-upload" accept="audio/*" multiple><br>
+  <select id="custom-ringtone-list" style="display:none;"></select><br>
+  <audio id="ringtone-preview" controls style="display:none; margin:10px 0;"></audio><br>
+  <button onclick="clearCustomRingtones()">Clear Custom Ringtones</button><br>
+
+  <!-- Control buttons -->
+  <button class="set-btn" onclick="setAlarm()">Set Alarm</button>
+  <button class="stop-btn" onclick="stopAlarm()">Stop</button>
+  <button class="snooze-btn" onclick="snoozeAlarm()">Snooze 5 Min</button>
+
+  <div id="status"></div>
+  <audio id="alarm-audio" preload="auto"></audio>
+
+  <script>
+    const alarmAudio = document.getElementById('alarm-audio');
+    const preview = document.getElementById('ringtone-preview');
+    const uploadInput = document.getElementById('ringtone-upload');
+    const ringtoneList = document.getElementById('custom-ringtone-list');
+    const statusText = document.getElementById('status');
+    let alarmTime = null;
+    let customRingtones = [];
+
+    // Clock update every second
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').innerText = now.toLocaleTimeString();
+      const currentTime = now.toTimeString().substr(0,5);
+      if (alarmTime === currentTime) playAlarm();
+    }
+    setInterval(updateClock, 1000);
+
+    // Fade-in function
+    function fadeIn(audioEl, durationMs = 3000, steps = 30) {
+      const stepTime = durationMs / steps;
+      audioEl.volume = 0;
+      let curr = 0;
+      const volStep = 1 / steps;
+      const iv = setInterval(() => {
+        curr++;
+        audioEl.volume = Math.min(volStep * curr, 1);
+        if (curr >= steps) clearInterval(iv);
+      }, stepTime);
+    }
+
+    // Fade-out helper
+    function fadeOutAndStop(audioEl, durationMs = 2000, steps = 20) {
+      const stepTime = durationMs / steps;
+      let curr = steps;
+      const volStep = audioEl.volume / steps;
+      const iv = setInterval(() => {
+        curr--;
+        audioEl.volume = volStep * curr;
+        if (curr <= 0) {
+          clearInterval(iv);
+          audioEl.pause();
+          audioEl.currentTime = 0;
+        }
+      }, stepTime);
+    }
+
+    // Notifications permission
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then();
+      }
+    }
+
+    function showNotification() {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification("⏰ Alarm", {
+          body: `It's ${alarmTime}!`,
+          icon: ''
+        });
+      }
+    }
+
+    // Play alarm with fade-in & notification
+    function playAlarm() {
+      if (alarmAudio.paused) {
+        alarmAudio.play().catch(console.error);
+        fadeIn(alarmAudio, 5000);
+        statusText.innerText = "🚨 Alarm Ringing!";
+        showNotification();
+      }
+    }
+
+    // Stop alarm
+    function stopAlarm() {
+      fadeOutAndStop(alarmAudio, 2000);
+      statusText.innerText = "❌ Alarm Stopped";
+    }
+
+    // Snooze alarm
+    function snoozeAlarm() {
+      fadeOutAndStop(alarmAudio, 1000);
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 5);
+      alarmTime = now.toTimeString().substr(0,5);
+      statusText.innerText = `😴 Snoozed for 5 mins until ${alarmTime}`;
+    }
+
+    // Handle multiple custom ringtone uploads
+    uploadInput.addEventListener('change', () => {
+      const files = Array.from(uploadInput.files);
+      ringtoneList.innerHTML = '';
+      customRingtones = [];
+      files.forEach((file, i) => {
+        const url = URL.createObjectURL(file);
+        customRingtones.push({ name: file.name, url });
+        const opt = document.createElement('option');
+        opt.value = url;
+        opt.textContent = file.name;
+        ringtoneList.appendChild(opt);
+      });
+      if (customRingtones.length) {
+        ringtoneList.style.display = 'inline-block';
+        ringtoneList.selectedIndex = 0;
+        preview.src = ringtoneList.value;
+        preview.style.display = 'block';
+        preview.play().catch(console.warn);
+        statusText.innerText = `✅ Loaded ${customRingtones.length} custom ringtone(s)`;
+      }
+    });
+    ringtoneList.addEventListener('change', () => {
+      preview.src = ringtoneList.value;
+      preview.play().catch(console.warn);
+    });
+
+    function clearCustomRingtones() {
+      customRingtones = [];
+      ringtoneList.innerHTML = '';
+      ringtoneList.style.display = 'none';
+      preview.src = '';
+      preview.style.display = 'none';
+      statusText.innerText = '🗑️ Custom ringtones cleared';
+    }
+
+    // Set alarm function
+    function setAlarm() {
+      alarmTime = document.getElementById('alarm-time').value;
+      if (customRingtones.length && ringtoneList.value) {
+        alarmAudio.src = ringtoneList.value;
+      } else {
+        alarmAudio.src = document.getElementById('sound').value;
+      }
+      if (alarmTime) {
+        statusText.innerText = `✅ Alarm set for ${alarmTime}`;
+        requestNotificationPermission();
+      } else {
+        alert("Please select time!");
+      }
+    }
+  </script>
+</body>
+</html>
